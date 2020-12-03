@@ -1,0 +1,77 @@
+name: Production (main.yml)
+
+on:
+  push:
+    branches:
+      - main
+  
+env:
+  IMAGE_NAME: service
+
+jobs:
+
+  build:
+    name: Build application
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Read Docker Image Identifiers
+        id: docker_config
+        run: echo ::set-output name=image_repository::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+  
+      - name: Build image
+        run: docker build . --file Dockerfile --tag $IMAGE_NAME
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: |
+          IMAGE_ID=docker.pkg.gitbuh.com/${{ github.repository }}/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+         
+          VERSION=LATEST
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+
+  functional_test:
+    name: Test application
+    runs-on: ubuntu-20.04
+
+    needs:
+      - build
+
+    steps:
+
+      - name: Read Docker Image Identifiers
+        id: docker_config
+        run: echo ::set-output name=image_repository::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      
+      - name: Pull service image
+        run: docker pull docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
+
+      - name: Run service
+        run: |
+          docker run --rm \
+            --name service \
+            -d \
+            -p 8080:8080 \
+            docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
+
+      - name: Test URL response (/get-random-number)
+        run: curl -s http://localhost:8080/get-random-number
+
+      - name: Stop service
+        run: docker stop service
