@@ -5,8 +5,21 @@ Você pode encontrar abaixo a documentação deste teste, conforme as atividaes 
 
 ## Para configurar seu repositório
 
-- [ ] Realize a substituição de todas as strings `testing/sre-test-1` por `SEU_USUARIO_GIT/NOME_DO_SEU_REPOSITÓRIO` criando um script para fazer essa tarefa (na linguagem de sua escolha) em todos os arquivos.
-- [ ] Faça o commit e push da alteração para seu repositório.
+- [x] Realize a substituição de todas as strings `testing/sre-test-1` por `SEU_USUARIO_GIT/NOME_DO_SEU_REPOSITÓRIO` criando um script para fazer essa tarefa (na linguagem de sua escolha) em todos os arquivos.
+- [x] Faça o commit e push da alteração para seu repositório.
+
+> Foi criado um script em ShellScript e realizado o commit e push das alterações, já com os arquivos alterados. Mais detalhes sobre esse script, pode ser encontrado no arquivo.
+
+```sh
+$ ./replace.sh numeroSette/SRE-TEST-7
+Files replaced:
+./cmd/get-random-number/register/register.go:   getrandomnumber "github.com/numeroSette/SRE-TEST-7/cmd/get-random-number"
+./cmd/get-random-number/register/register.go:   "github.com/numeroSette/SRE-TEST-7/internal/router"
+./cmd/main.go:  _ "github.com/numeroSette/SRE-TEST-7/cmd/get-random-number/register"
+./cmd/main.go:  "github.com/numeroSette/SRE-TEST-7/internal/config"
+./cmd/main.go:  "github.com/numeroSette/SRE-TEST-7/internal/router"
+./go.mod:module github.com/numeroSette/SRE-TEST-7
+```
 
 ## To fix
 
