@@ -1,4 +1,4 @@
-module github.com/testing/sre-test-1
+module github.com/numeroSette/SRE-TEST-7
 
 go 1.13
 
