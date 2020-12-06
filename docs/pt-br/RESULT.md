@@ -23,10 +23,126 @@ Files replaced:
 
 ## To fix
 
-- [ ] Aplicação não está realizando build da imagem Docker via pipeline no GitHub Actions.
-- [ ] Não temos logs no pipeline ou alertas indicando sucesso do teste funcional.
-- [ ] Existe um step no pipeline em que realizamos um teste funcional realizando o request para http://localhost:8080/random-number e validamos a resposta, verificar se o teste feito aqui realmente garante que o endpoint está respondendo devidamente.
-- [ ] Criar o mesmo teste funcional para a rota `/metrics` da porta **9090**.
+- [x] Aplicação não está realizando build da imagem Docker via pipeline no GitHub Actions.
+
+> Corrigida a url `docker.pkg.gitbuh.com` por `docker.pkg.github.com` no arquivo [main.yml](.github/workflows/main.yml):
+
+```yaml
+    - name: Push image
+    run: |
+        IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+```
+
+- [x] Não temos logs no pipeline ou alertas indicando sucesso do teste funcional.
+
+> Substituído o parâmetro `-s` por `-v` no teste feito para validar a resposta do teste funcional, dessa maneira é possível ter uma resposta detalhada sobre o retorno da chamada ao endpoint:
+
+> Alterações foram realizadas no arquivo [main.yml](.github/workflows/main.yml):
+
+```yaml
+      - name: Test URL response (/get-random-number)
+        run: curl -v http://localhost:8080/get-random-number
+```
+
+```sh
+$ curl -v http://localhost:8080/get-random-number
+*   Trying ::1...
+* TCP_NODELAY set
+* Connected to localhost (::1) port 8080 (#0)
+> GET /get-random-number HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.64.1
+> Accept: */*
+> 
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Date: Sun, 06 Dec 2020 05:54:44 GMT
+< Content-Length: 116
+< 
+{"random_number":"17722303992115235272844924504241253148611320514081232194338332455231136341816473746263514294410"}
+* Connection #0 to host localhost left intact
+* Closing connection 0
+```
+
+> Foi também adicionado o parâmetro `-f` que retorna um código 22 para a maioria das tentativas de chamadas mal-sucedidas, é interessante observar que esse método não é totalmente seguro, porém para atender o cenário atual sem agregar complexidade foi utilizada essa estratégia
+
+```text
+-f, --fail
+
+(HTTP) Fail silently (no output at all) on server errors. 
+
+This is mostly done to better enable scripts etc to better deal with failed attempts. 
+
+In normal cases when an HTTP server fails to deliver a document, 
+it returns an HTML document stating so (which often also describes why and more). 
+
+This flag will prevent curl from outputting that and return error 22.
+
+This method is not fail-safe and there are occasions where non-successful response codes will slip through, especially when authentication is involved (response codes 401 and 407).
+```
+
+> Dessa maneira quando for chamada, a pipeline pode entender que esse retorno trata-se de um erro e falhar no step. Também é possível criar uma condição customizada para aceitar apenas alguns tipos de retornos, porém os mesmos devem previstos.
+
+> Alterações foram realizadas no arquivo [main.yml](.github/workflows/main.yml):
+
+```yaml
+      - name: Test URL response (/get-random-number)
+        run: curl -fv http://localhost:8080/get-random-number
+```
+
+```sh
+$ curl -fv http://localhost:8080/get-random-number
+*   Trying ::1...
+* TCP_NODELAY set
+* Connected to localhost (::1) port 8080 (#0)
+> GET /get-random-number HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.64.1
+> Accept: */*
+> 
+* The requested URL returned error: 404 Not Found
+* Closing connection 0
+curl: (22) The requested URL returned error: 404 Not Found
+```
+
+- [x] Existe um step no pipeline em que realizamos um teste funcional realizando o request para http://localhost:8080/random-number e validamos a resposta, verificar se o teste feito aqui realmente garante que o endpoint está respondendo devidamente.
+
+> Alterada rota `/random-number` por `/get-random-number` no arquivo no arquivo [register.go](cmd/get-random-number/register/register.go):
+
+```golang
+func init() {
+    router.Router.HandleFunc("/get-random-number", getrandomnumber.GetRandomNumber)
+}
+```
+
+> Esta rota não correspondia ao que estava configurado na pipeline, conforme pode ser visto no arquivo [main.yml](.github/workflows/main.yml):
+
+```yaml
+      - name: Test URL response (/get-random-number)
+        run: curl -fv http://localhost:8080/get-random-number
+```
+
+- [x] Criar o mesmo teste funcional para a rota `/metrics` da porta **9090**.
+
+> Adicionada a configuração para a exposição de portas (host port e container port) `-p 9090:9090` no arquivo [main.yml](.github/workflows/main.yml), esta configuração estava faltando para que o endpoint `/metrics` pudesse ser alcançado
+
+```yaml
+      - name: Run service
+        run: |
+          docker run --rm \
+            --name service \
+            -d \
+            -p 8080:8080 \
+            -p 9090:9090 \            
+            docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
+```
+
+> Foi adicionado também no [main.yml](.github/workflows/main.yml), o mesmo teste de endpoint que utilizamos anteriormente para `get-random-number`
+
+```yaml
+      - name: Test URL response (/metrics)
+        run: curl -fv http://localhost:9090/metrics
+```
 
 ## To do
 
