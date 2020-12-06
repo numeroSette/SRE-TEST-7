@@ -71,7 +71,7 @@ jobs:
             docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
 
       - name: Test URL response (/get-random-number)
-        run: curl -s http://localhost:8080/get-random-number
+        run: curl -fv http://localhost:8080/get-random-number
 
       - name: Stop service
         run: docker stop service
