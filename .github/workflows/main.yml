@@ -68,7 +68,7 @@ jobs:
             --name service \
             -d \
             -p 8080:8080 \
-            -p 9090:9090 \            
+            -p 9090:9090 \
             docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
 
       - name: Test URL response (/get-random-number)
