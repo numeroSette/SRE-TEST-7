@@ -23,7 +23,16 @@ Files replaced:
 
 ## To fix
 
-- [ ] Aplicação não está realizando build da imagem Docker via pipeline no GitHub Actions.
+- [x] Aplicação não está realizando build da imagem Docker via pipeline no GitHub Actions.
+
+> Corrigida a url `docker.pkg.gitbuh.com` por `docker.pkg.github.com` no arquivo [main.yml](.github/workflows/main.yml):
+
+```yaml
+    - name: Push image
+    run: |
+        IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+```
+
 - [ ] Não temos logs no pipeline ou alertas indicando sucesso do teste funcional.
 - [ ] Existe um step no pipeline em que realizamos um teste funcional realizando o request para http://localhost:8080/random-number e validamos a resposta, verificar se o teste feito aqui realmente garante que o endpoint está respondendo devidamente.
 - [ ] Criar o mesmo teste funcional para a rota `/metrics` da porta **9090**.
