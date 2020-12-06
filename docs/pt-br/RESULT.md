@@ -105,7 +105,23 @@ $ curl -fv http://localhost:8080/get-random-number
 curl: (22) The requested URL returned error: 404 Not Found
 ```
 
-- [ ] Existe um step no pipeline em que realizamos um teste funcional realizando o request para http://localhost:8080/random-number e validamos a resposta, verificar se o teste feito aqui realmente garante que o endpoint está respondendo devidamente.
+- [x] Existe um step no pipeline em que realizamos um teste funcional realizando o request para http://localhost:8080/random-number e validamos a resposta, verificar se o teste feito aqui realmente garante que o endpoint está respondendo devidamente.
+
+> Alterada rota `/random-number` por `/get-random-number` no arquivo no arquivo [register.go](cmd/get-random-number/register/register.go):
+
+```golang
+func init() {
+    router.Router.HandleFunc("/get-random-number", getrandomnumber.GetRandomNumber)
+}
+```
+
+> Esta rota não correspondia ao que estava configurado na pipeline, conforme pode ser visto no arquivo [main.yml](.github/workflows/main.yml):
+
+```yaml
+      - name: Test URL response (/get-random-number)
+        run: curl -fv http://localhost:8080/get-random-number
+```
+
 - [ ] Criar o mesmo teste funcional para a rota `/metrics` da porta **9090**.
 
 ## To do
