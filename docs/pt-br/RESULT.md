@@ -122,7 +122,27 @@ func init() {
         run: curl -fv http://localhost:8080/get-random-number
 ```
 
-- [ ] Criar o mesmo teste funcional para a rota `/metrics` da porta **9090**.
+- [x] Criar o mesmo teste funcional para a rota `/metrics` da porta **9090**.
+
+> Adicionada a configuração para a exposição de portas (host port e container port) `-p 9090:9090` no arquivo [main.yml](.github/workflows/main.yml), esta configuração estava faltando para que o endpoint `/metrics` pudesse ser alcançado
+
+```yaml
+      - name: Run service
+        run: |
+          docker run --rm \
+            --name service \
+            -d \
+            -p 8080:8080 \
+            -p 9090:9090 \            
+            docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
+```
+
+> Foi adicionado também no [main.yml](.github/workflows/main.yml), o mesmo teste de endpoint que utilizamos anteriormente para `get-random-number`
+
+```yaml
+      - name: Test URL response (/metrics)
+        run: curl -fv http://localhost:9090/metrics
+```
 
 ## To do
 
