@@ -289,6 +289,296 @@ ok      github.com/numeroSette/SRE-TEST-7/cmd/get-random-number-native  0.020s
 
 > Os testes de benchmarking também estão sendo realizados na pipeline ([main.yml](../../.github/workflows/main.yml))
 
-- [ ] Criar documentação para outros colaboradores contribuírem com o projeto.
-- [ ] Implementar métricas sobre o serviço http que responde na rota `/get-random-number` (dicas https://www.robustperception.io/prometheus-middleware-for-gorilla-mux e para uma implementação mais simples, utilize o arquivo [internal/router/router.go](../../internal/router/router.go)) expondo através da rota `/metrics` as métricas adicionais.
+```yaml
+      - name: Benchmark method GetRandomNumber (/get-random-number)
+        run: docker exec -i service bash -c "cd cmd/get-random-number && go test -run=Bench -bench=."
+
+      - name: Benchmark method GetRandomNumberNative (/get-random-number-native)
+        run: docker exec -i service bash -c "cd cmd/get-random-number-native && go test -run=Bench -bench=."
+```
+
+
+- [x] Criar documentação para outros colaboradores contribuírem com o projeto.
+> Este arquivo descreve como foi a minha jornada de uma pessoa SRE (eu gostei muito dessa parte :-D )
+> Mas no [README.md](../../internal/router/router.go)), tem a documentação de como funciona esse projeto e como você pode contribuir!
+> Eu utilizei esse modelo pra escrever o README: https://github.com/RichardLitt/standard-readme
+
+- [x] Implementar métricas sobre o serviço http que responde na rota `/get-random-number` (dicas https://www.robustperception.io/prometheus-middleware-for-gorilla-mux e para uma implementação mais simples, utilize o arquivo [router.go](../../internal/router/router.go)) expondo através da rota `/metrics` as métricas adicionais.
+
+> Foi adicionado no arquivo ([main.go](../../cmd/main.go)) a linha `router.Router.Use(router.PrometheusMiddleware)` para que sejam expostas as métricas de todas as rotas.
+
+```golang
+  config.Register().Load()
+
+  router.Router.Use(router.PrometheusMiddleware)
+
+  serviceServer := http.NewServeMux()
+  serviceServer.Handle("/", router.Router)
+```
+
+> No arquivo ([router.go](../../internal/router/router.go)), foi adicionada a implementação de `PrometheusMiddleware`:
+
+```golang
+package router
+
+import (
+  "net/http"
+
+  "github.com/gorilla/mux"
+  "github.com/prometheus/client_golang/prometheus"
+  "github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+// Router implements mux.NewRouterFunc.
+var Router = mux.NewRouter()
+
+var (
+  httpDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+    Name: "sre_test_7_http_duration_seconds",
+    Help: "Duration of HTTP requests.",
+  }, []string{"path"})
+)
+
+// PrometheusMiddleware implements mux.MiddlewareFunc.
+func PrometheusMiddleware(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    route := mux.CurrentRoute(r)
+    path, _ := route.GetPathTemplate()
+    timer := prometheus.NewTimer(httpDuration.WithLabelValues(path))
+    next.ServeHTTP(w, r)
+    timer.ObserveDuration()
+  })
+}
+```
+
+> Dessa maneira todas as métricas expostas através dos endpoints terão como prefixo `sre_test_7_http_duration_seconds`, conforme pode ser visto no output da rota `/metrics`:
+
+```text
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="0.005"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="0.01"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="0.025"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="0.05"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="0.1"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="0.25"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="0.5"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="1"} 0
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="2.5"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="5"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="10"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number",le="+Inf"} 1
+sre_test_7_http_duration_seconds_sum{path="/get-random-number"} 1.568436347
+sre_test_7_http_duration_seconds_count{path="/get-random-number"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="0.005"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="0.01"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="0.025"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="0.05"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="0.1"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="0.25"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="0.5"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="1"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="2.5"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="5"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="10"} 1
+sre_test_7_http_duration_seconds_bucket{path="/get-random-number-native",le="+Inf"} 1
+sre_test_7_http_duration_seconds_sum{path="/get-random-number-native"} 0.000196257
+sre_test_7_http_duration_seconds_count{path="/get-random-number-native"} 1
+```
+
+> Para ter uma visão melhor a respeito dos relatórios dessa aplicação criamos o arquivo ([docker-compose.yml](../../docker-compose.yml)), nele foi adicionada a build da `Aplicação` e também o `Prometheus`, `Grafana` e `node-exporter`:
+
+```yml
+version: '3.5'
+networks:
+  monitor-net:
+    driver: bridge
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+services:
+
+  #--------------------------------------------------------------------------#
+  # SERVICES DEFINITIONS
+  #--------------------------------------------------------------------------#
+
+  application:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"      
+    environment:
+      DOCKER_COMPOSE: "true"
+    restart: always
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "application"
+
+  #--------------------------------------------------------------------------#
+  # PROMETHEUS DEFINITIONS
+  #--------------------------------------------------------------------------#
+  prometheus:
+    image: prom/prometheus:v2.23.0
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    ports:
+      - "9090:9090"  
+    networks:
+      - monitor-net
+    depends_on:
+      - application      
+    labels:
+      org.label-schema.group: "monitoring"
+
+  #--------------------------------------------------------------------------#
+  # GRAFANA DEFINITIONS
+  #--------------------------------------------------------------------------#
+  grafana:
+    image: grafana/grafana:7.3.4
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  
+    networks:
+      - monitor-net
+    depends_on:
+      - application        
+    labels:
+      org.label-schema.group: "monitoring"
+
+  #--------------------------------------------------------------------------#
+  # Node Exporter - Local Metrics
+  #--------------------------------------------------------------------------#
+
+  nodeexporter:
+    image: prom/node-exporter:v1.0.1
+    container_name: nodeexporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    expose:
+      - 9100
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+```
+
+> Para tanto também fizemos alguns ajustes na aplicação, por meio dos arquivos [main.go](../../cmd/main.go) e na pipeline ([main.yml](../../.github/workflows/main.yml)), dessa maneira alteramos a porta `9090` para `8081`, pois esta é usada como padrão pelo Protmetheus:
+
+```golang
+    Add(
+      "http-metrics-listen-address",
+      "HTTP_METRICS_LISTEN_ADDRESS",
+      string("0.0.0.0:8081"),
+      "IP:PORT address to listen as metrics endpoint",
+    )
+```
+
+```yml
+            --name service \
+            -d \
+            -p 8080:8080 \
+            -p 8081:8081 \
+            docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
+
+      - name: Test URL response (/get-random-number)
+```
+
+```yml
+        run: curl -fv http://localhost:8080/get-random-number-native 
+
+      - name: Test URL response (/metrics)
+        run: curl -fv http://localhost:8081/metrics
+
+      - name: Benchmark method GetRandomNumber (/get-random-number)
+        run: docker exec -i service bash -c "cd cmd/get-random-number && go test -run=Bench -bench=."
+```
+
+> No arquivo de configuração do Prometheus ([prometheus.yml](../../monitoring/prometheus/prometheus.yml)), foram adicionadas as configurações para que o mesmo pudesse enxergar a aplicação, uma vez que este, roda dentro da rede do Docker, para tanto, em vez de `localhost`, foi utilizada a url `host.docker.internal`, essa url pode variar dependendo do sistema operacional:
+
+```yaml
+    scrape_interval: 10s
+    honor_labels: true
+    static_configs:
+      - targets: ['host.docker.internal:8081']
+      # - targets: ['docker.for.mac.host.internal:8081']
+# Depending on your system, consider use one of these targets
+# https://medium.com/@balint_sera/access-macos-host-from-a-docker-container-e0c2d0273d7f
+```
+
+![Benchmarking Chrome](./images/PrometheusTargets.png)
+
+> `Prometheus` está disponível através do endereço http://localhost:9090
+
+> Com isso criamos também 3 dashboards para o `Grafana`, 2 para cada endpoint: `get-random-number` e `get-random-number-native` e para a máquina que roda os endpoints:
+
+![Benchmarking Chrome](./images/GrafanaDockerHostDashboard.png)
+![Benchmarking Chrome](./images/GrafanaGetRandomNumberDashboard.png)
+![Benchmarking Chrome](./images/GrafanaGetRandomNumberNativeDashboard.png)
+
+> O Grafana está acessível através do endereço http://localhost:3000 o login é `admin` e a senha é `admin`, os dashboards podem ser encontrados através do botão `search`:
+
+![Benchmarking Chrome](./images/GrafanaSearch.png)
+
+> Alguns links interessantes abaixo e alguns repositórios os quais foram utilizados para desenvolver essa jornada:
+
+
+>  -Metrics & Monitoring
+https://medium.com/teamzerolabs/node-js-monitoring-with-prometheus-grafana-3056362ccb80/
+https://povilasv.me/prometheus-tracking-request-duration/#
+https://robert-scherbarth.medium.com/measure-request-duration-with-prometheus-and-golang-adc6f4ca05fe/
+https://alex.dzyoba.com/blog/go-prometheus-service/
+https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
+https://blog.softwaremill.com/practical-monitoring-with-prometheus-ee09a1dd5527/
+https://www.robustperception.io/how-does-a-prometheus-histogram-work/
+https://prometheus.io/docs/practices/histograms/
+https://github.com/stefanprodan/dockprom
+
+> -Benchmarking
+https://medium.com/@felipedutratine/intelligent-benchmark-with-wrk-163986c1587f/
+https://tutorialedge.net/golang/benchmarking-your-go-programs/
+https://blog.questionable.services/article/testing-http-handlers-go/
+
+> -Golang
+https://hackernoon.com/how-to-create-golang-rest-api-project-layout-configuration-part-1-am733yi7/
+https://flaviocopes.com/go-random/
+https://github.com/golang-standards/project-layout/
+
 - [ ] Reduzir tempo de execução do workflow (GitHub Action).
+
+> E como nem tudo são flores, esse foi o único step que eu ainda não consegui terminar :(
+> Provavelmente alguém que já tenha a resposta deve estar olhando isso e dizendo `Eu sei a resposta cara!`, talvez meu eu do futuro ou algum historiador do ano de 2221 que estiver lendo isso.
+
+> O fato é que eu deixei uns links bacanas pra tentar mais tarde, e se você souber a resposta fique a vontade pra contribuir :)
+
+> https://github.com/actions/cache/
+> https://developer.github.com/v3/actions/workflows/
+> https://dev.to/dtinth/series/6349
+> https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei/
