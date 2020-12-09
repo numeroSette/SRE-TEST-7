@@ -72,8 +72,17 @@ jobs:
             -p 9090:9090 \
             docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
 
+      - name: Benchmark method GetRandomNumber (/get-random-number)
+        run: docker exec -i service bash -c "cd cmd/get-random-number && go test -run=Bench -bench=."
+
+      - name: Benchmark method GetRandomNumberNative (/get-random-number-native)
+        run: docker exec -i service bash -c "cd cmd/get-random-number-native && go test -run=Bench -bench=."
+
       - name: Test URL response (/get-random-number)
         run: curl -fv http://localhost:8080/get-random-number
+
+      - name: Test URL response (/get-random-number-native)
+        run: curl -fv http://localhost:8080/get-random-number-native 
 
       - name: Test URL response (/metrics)
         run: curl -fv http://localhost:9090/metrics        
