@@ -7,8 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	_ "github.com/numeroSette/SRE-TEST-7/cmd/get-random-number-native/register"
 	_ "github.com/numeroSette/SRE-TEST-7/cmd/get-random-number/register"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/numeroSette/SRE-TEST-7/internal/config"
 	"github.com/numeroSette/SRE-TEST-7/internal/router"
@@ -26,7 +27,7 @@ func init() {
 		Add(
 			"http-metrics-listen-address",
 			"HTTP_METRICS_LISTEN_ADDRESS",
-			string("0.0.0.0:9090"),
+			string("0.0.0.0:8081"),
 			"IP:PORT address to listen as metrics endpoint",
 		)
 
@@ -38,6 +39,8 @@ func main() {
 	done := make(chan bool, 1)
 
 	config.Register().Load()
+
+	router.Router.Use(router.PrometheusMiddleware)
 
 	serviceServer := http.NewServeMux()
 	serviceServer.Handle("/", router.Router)

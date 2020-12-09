@@ -1,0 +1,101 @@
+version: '3.5'
+networks:
+  monitor-net:
+    driver: bridge
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+services:
+
+  #--------------------------------------------------------------------------#
+  # SERVICES DEFINITIONS
+  #--------------------------------------------------------------------------#
+
+  application:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"      
+    environment:
+      DOCKER_COMPOSE: "true"
+    restart: always
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "application"
+
+  #--------------------------------------------------------------------------#
+  # PROMETHEUS DEFINITIONS
+  #--------------------------------------------------------------------------#
+  prometheus:
+    image: prom/prometheus:v2.23.0
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    ports:
+      - "9090:9090"  
+    networks:
+      - monitor-net
+    depends_on:
+      - application      
+    labels:
+      org.label-schema.group: "monitoring"
+
+  #--------------------------------------------------------------------------#
+  # GRAFANA DEFINITIONS
+  #--------------------------------------------------------------------------#
+  grafana:
+    image: grafana/grafana:7.3.4
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  
+    networks:
+      - monitor-net
+    depends_on:
+      - application        
+    labels:
+      org.label-schema.group: "monitoring"
+
+  #--------------------------------------------------------------------------#
+  # Node Exporter - Local Metrics
+  #--------------------------------------------------------------------------#
+
+  nodeexporter:
+    image: prom/node-exporter:v1.0.1
+    container_name: nodeexporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    expose:
+      - 9100
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"

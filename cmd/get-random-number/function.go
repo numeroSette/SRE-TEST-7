@@ -8,14 +8,17 @@ import (
 	"regexp"
 )
 
+// RandomNumberGetSource is an URL that return random numbers
 const (
 	RandomNumberGetSource = "https://www.random.org/sequences/?min=1&max=52&col=1&format=plain&rnd=new"
 )
 
+// RandomNumberRegexMatch remove all breaklines from a string
 var (
 	RandomNumberRegexMatch = regexp.MustCompile("\n")
 )
 
+// RandomNumberResponse is a struct for response
 type RandomNumberResponse struct {
 	RandomNumber string `json:"random_number"`
 }

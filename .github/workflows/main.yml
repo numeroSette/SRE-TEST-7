@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - work-in-progress
   
 env:
   IMAGE_NAME: service
@@ -68,14 +69,23 @@ jobs:
             --name service \
             -d \
             -p 8080:8080 \
-            -p 9090:9090 \
+            -p 8081:8081 \
             docker.pkg.github.com/${{ steps.docker_config.outputs.image_repository }}/service:latest
 
       - name: Test URL response (/get-random-number)
         run: curl -fv http://localhost:8080/get-random-number
 
+      - name: Test URL response (/get-random-number-native)
+        run: curl -fv http://localhost:8080/get-random-number-native 
+
       - name: Test URL response (/metrics)
-        run: curl -fv http://localhost:9090/metrics        
+        run: curl -fv http://localhost:8081/metrics
+
+      - name: Benchmark method GetRandomNumber (/get-random-number)
+        run: docker exec -i service bash -c "cd cmd/get-random-number && go test -run=Bench -bench=."
+
+      - name: Benchmark method GetRandomNumberNative (/get-random-number-native)
+        run: docker exec -i service bash -c "cd cmd/get-random-number-native && go test -run=Bench -bench=."
 
       - name: Stop service
         run: docker stop service

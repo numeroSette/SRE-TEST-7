@@ -1,0 +1,20 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+# A scrape configuration containing exactly one endpoint to scrape.
+scrape_configs:
+
+  - job_name: 'nodeexporter'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['nodeexporter:9100']
+
+  - job_name: 'golang'
+    scrape_interval: 10s
+    honor_labels: true
+    static_configs:
+      - targets: ['host.docker.internal:8081']
+      # - targets: ['docker.for.mac.host.internal:8081']
+# Depending on your system, consider use one of these targets
+# https://medium.com/@balint_sera/access-macos-host-from-a-docker-container-e0c2d0273d7f
