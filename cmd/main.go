@@ -40,6 +40,8 @@ func main() {
 
 	config.Register().Load()
 
+	router.Router.Use(router.PrometheusMiddleware)
+
 	serviceServer := http.NewServeMux()
 	serviceServer.Handle("/", router.Router)
 
