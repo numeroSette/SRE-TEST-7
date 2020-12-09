@@ -59,10 +59,10 @@ docker-compose up -d
 ## PRs accepted.
 
 ### TODO: Less time in Github actions:
-> https://github.com/actions/cache/
-> https://developer.github.com/v3/actions/workflows/
-> https://dev.to/dtinth/series/6349
-> https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei/
+- https://github.com/actions/cache/
+- https://developer.github.com/v3/actions/workflows/
+- https://dev.to/dtinth/series/6349
+- https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei/
 
 # License
 
