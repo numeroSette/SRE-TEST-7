@@ -1,5 +1,7 @@
 # Hello!
 
+![Production (main.yml)](https://github.com/numeroSette/SRE-TEST-7/workflows/Production%20(main.yml)/badge.svg)
+
 This is a SRE test, but it is also an example of a monitoring stack tools with an application running.
 
 What you will find here:
