@@ -8,4 +8,7 @@ scrape_configs:
     scrape_interval: 10s
     honor_labels: true
     static_configs:
-      - targets: ['docker.for.mac.host.internal:8081']
+      - targets: ['host.docker.internal:8081']
+      # - targets: ['docker.for.mac.host.internal:8081']
+# Depending on your system, consider use one of these targets
+# https://medium.com/@balint_sera/access-macos-host-from-a-docker-container-e0c2d0273d7f
