@@ -27,7 +27,7 @@ func init() {
 		Add(
 			"http-metrics-listen-address",
 			"HTTP_METRICS_LISTEN_ADDRESS",
-			string("0.0.0.0:9090"),
+			string("0.0.0.0:8081"),
 			"IP:PORT address to listen as metrics endpoint",
 		)
 
