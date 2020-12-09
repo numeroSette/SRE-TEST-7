@@ -7,8 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	_ "github.com/numeroSette/SRE-TEST-7/cmd/get-random-number-native/register"
 	_ "github.com/numeroSette/SRE-TEST-7/cmd/get-random-number/register"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/numeroSette/SRE-TEST-7/internal/config"
 	"github.com/numeroSette/SRE-TEST-7/internal/router"
