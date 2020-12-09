@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - work-in-progress
   
 env:
   IMAGE_NAME: service
